@@ -1,16 +1,31 @@
-# This is a sample Python script.
-
-# Press Ctrl+F5 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press F9 to toggle the breakpoint.
+from data.initial_campaign import build_initial_campaign
+from services.weekly_turn_service import WeeklyTurnService
+from storage.json_storage import JsonStorage
 
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+def main() -> None:
+    campaign = build_initial_campaign()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    weekly_turn_service = WeeklyTurnService()
+    events = weekly_turn_service.run_week(campaign)
+
+    print(f"Кампания: {campaign.name}")
+    print(f"Текущая неделя: {campaign.current_week}")
+    print()
+
+    print("События недели:")
+    for event in events:
+        print(f"- {event.title}")
+
+        if event.description:
+            print(f"  {event.description}")
+
+    storage = JsonStorage()
+    storage.save_campaign(campaign, "saves/campaign_week_1.json")
+
+    print()
+    print("Состояние кампании сохранено в saves/campaign_week_1.json")
+
+
+if __name__ == "__main__":
+    main()

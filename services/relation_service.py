@@ -1,0 +1,2 @@
+class RelationService:
+    pass

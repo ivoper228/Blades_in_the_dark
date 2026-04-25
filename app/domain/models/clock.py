@@ -1,22 +1,20 @@
-class Clock:
-    id
-    name
-    clock_type
-    max_segments
-    current_segments
-    owner_faction_id
-    target_faction_id
-    district_id
-    street_id
-    status
-    visibility
-    trigger_on_complete
-    notes
+from dataclasses import dataclass
 
-class ClockType:
-    PROJECT = "project"           # долгосрочная цель
-    DANGER = "danger"             # угроза
-    CONFLICT = "conflict"         # конфликт организаций
-    CONTROL = "control"           # контроль улицы / района
-    INVESTIGATION = "investigation"
-    REVERSIBLE = "reversible"
+from app.domain.enums import ClockStatus, ClockType, Visibility
+
+
+@dataclass
+class Clock:
+    id: str
+    name: str
+    clock_type: ClockType
+    max_segments: int
+    current_segments: int = 0
+    owner_faction_id: str | None = None
+    target_faction_id: str | None = None
+    district_id: str | None = None
+    street_id: str | None = None
+    status: ClockStatus = ClockStatus.ACTIVE
+    visibility: Visibility = Visibility.GM_ONLY
+    trigger_on_complete: str = ""
+    notes: str = ""

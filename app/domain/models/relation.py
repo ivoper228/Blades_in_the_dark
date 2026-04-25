@@ -1,8 +1,12 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class Relation:
-    id
-    faction_a_id
-    faction_b_id
-    value        # от -3 до +3
-    reason
-    is_public
-    notes
+    id: str
+    faction_a_id: str
+    faction_b_id: str
+    value: int = 0
+    reason: str = ""
+    is_public: bool = False
+    notes: str = ""
