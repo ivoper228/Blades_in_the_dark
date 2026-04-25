@@ -1,6 +1,24 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Any
 
-from app.domain.enums import ClockStatus, ClockType, Visibility
+from app.domain.enums import (
+    ClockEffectType,
+    ClockStatus,
+    ClockType,
+    Visibility,
+)
+
+
+@dataclass
+class ClockEffect:
+    effect_type: ClockEffectType
+    target_faction_id: str | None = None
+    secondary_faction_id: str | None = None
+    target_clock_id: str | None = None
+    street_id: str | None = None
+    value: Any = None
+    amount: int = 0
+    description: str = ""
 
 
 @dataclass
@@ -18,3 +36,5 @@ class Clock:
     visibility: Visibility = Visibility.GM_ONLY
     trigger_on_complete: str = ""
     notes: str = ""
+    auto_advance: bool = True
+    completion_effects: list[ClockEffect] = field(default_factory=list)

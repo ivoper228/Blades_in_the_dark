@@ -2,6 +2,7 @@ from uuid import uuid4
 
 from app.domain.enums import (
     ClockStatus,
+    ClockType,
     EventType,
     FactionStatus,
     Hold,
@@ -11,16 +12,19 @@ from app.domain.models import (
     Campaign,
     CityEvent,
     Clock,
+    ClockEffect,
     Faction,
     NpcFaction,
     Relation,
 )
+from services.clock_effect_service import ClockEffectService
 from services.clock_service import ClockService
 
 
 class GMActionService:
     def __init__(self) -> None:
         self.clock_service = ClockService()
+        self.clock_effect_service = ClockEffectService()
 
     def get_relation_value(
         self,
@@ -163,7 +167,7 @@ class GMActionService:
                 f"Причина: {reason or 'не указана'}."
             ),
             faction_ids=[faction.id],
-            consequences=[f"status {old_status.value} -> {new_status.value}"],
+            consequences=[f"status {old_status.value} -> {faction.status.value}"],
             created_by="gm_action",
         )
 
@@ -303,7 +307,7 @@ class GMActionService:
                 title=f"{faction.name}: счетчик заполнен",
                 description=(
                     f"Счетчик '{clock.name}' заполнен. "
-                    "Ведущий должен выбрать итоговое последствие."
+                    "Автоэффекты будут применены сразу."
                 ),
                 faction_ids=[faction.id],
                 clock_ids=[clock.id],
@@ -315,6 +319,12 @@ class GMActionService:
 
             self._add_event(campaign, completed_event)
             events.append(completed_event)
+
+            effect_events = self.clock_effect_service.apply_completion_effects(
+                campaign=campaign,
+                source_clock=clock,
+            )
+            events.extend(effect_events)
 
         return events
 
@@ -353,6 +363,147 @@ class GMActionService:
         self._add_event(campaign, event)
 
         return event
+
+    def create_faction_clock(
+        self,
+        campaign: Campaign,
+        name: str,
+        clock_type: ClockType,
+        max_segments: int,
+        owner_faction_id: str,
+        current_segments: int = 0,
+        target_faction_id: str | None = None,
+        district_id: str | None = None,
+        street_id: str | None = None,
+        auto_advance: bool = True,
+        trigger_on_complete: str = "",
+        notes: str = "",
+        completion_effects: list[ClockEffect] | None = None,
+        reason: str = "",
+    ) -> tuple[Clock, CityEvent]:
+        owner = self._get_faction(campaign, owner_faction_id)
+
+        clock_id = self._build_clock_id(name)
+
+        if clock_id in campaign.city.clocks:
+            clock_id = f"{clock_id}_{str(uuid4())[:8]}"
+
+        clock = Clock(
+            id=clock_id,
+            name=name,
+            clock_type=clock_type,
+            max_segments=max_segments,
+            current_segments=max(0, min(current_segments, max_segments)),
+            owner_faction_id=owner_faction_id,
+            target_faction_id=target_faction_id,
+            district_id=district_id,
+            street_id=street_id,
+            auto_advance=auto_advance,
+            trigger_on_complete=trigger_on_complete,
+            notes=notes,
+            completion_effects=completion_effects or [],
+        )
+
+        campaign.city.clocks[clock.id] = clock
+
+        if clock.id not in owner.clock_ids:
+            owner.clock_ids.append(clock.id)
+
+        event = self._create_event(
+            campaign=campaign,
+            event_type=EventType.MANUAL_CHANGE,
+            title=f"{owner.name}: создан новый счетчик",
+            description=(
+                f"Создан счетчик '{clock.name}' "
+                f"{clock.current_segments}/{clock.max_segments}. "
+                f"Автопрогресс: {'да' if auto_advance else 'нет'}. "
+                f"Причина: {reason or 'не указана'}."
+            ),
+            faction_ids=[owner.id],
+            clock_ids=[clock.id],
+            district_id=district_id,
+            street_id=street_id,
+            consequences=["clock created"],
+            created_by="gm_action",
+        )
+
+        self._add_event(campaign, event)
+
+        return clock, event
+
+    def add_completion_effect_to_clock(
+        self,
+        campaign: Campaign,
+        clock_id: str,
+        effect: ClockEffect,
+        reason: str = "",
+    ) -> CityEvent:
+        clock = self._get_clock(campaign, clock_id)
+        clock.completion_effects.append(effect)
+
+        event = self._create_event(
+            campaign=campaign,
+            event_type=EventType.MANUAL_CHANGE,
+            title=f"Добавлен эффект счетчика: {clock.name}",
+            description=(
+                f"К счетчику '{clock.name}' добавлен эффект "
+                f"'{effect.effect_type.value}'. "
+                f"Причина: {reason or 'не указана'}."
+            ),
+            faction_ids=[clock.owner_faction_id] if clock.owner_faction_id else [],
+            clock_ids=[clock.id],
+            district_id=clock.district_id,
+            street_id=clock.street_id,
+            consequences=["clock effect added"],
+            created_by="gm_action",
+        )
+
+        self._add_event(campaign, event)
+
+        return event
+
+    def complete_clock_now(
+        self,
+        campaign: Campaign,
+        clock_id: str,
+        reason: str = "",
+    ) -> list[CityEvent]:
+        clock = self._get_clock(campaign, clock_id)
+
+        old_progress = clock.current_segments
+        clock.current_segments = clock.max_segments
+        clock.status = ClockStatus.COMPLETED
+
+        events = []
+
+        completed_event = self._create_event(
+            campaign=campaign,
+            event_type=EventType.CLOCK_COMPLETED,
+            title=f"Счетчик заполнен вручную: {clock.name}",
+            description=(
+                f"Счетчик '{clock.name}' изменен с "
+                f"{old_progress}/{clock.max_segments} на "
+                f"{clock.current_segments}/{clock.max_segments}. "
+                f"Причина: {reason or 'не указана'}."
+            ),
+            faction_ids=[clock.owner_faction_id] if clock.owner_faction_id else [],
+            clock_ids=[clock.id],
+            district_id=clock.district_id,
+            street_id=clock.street_id,
+            consequences=[clock.trigger_on_complete],
+            created_by="gm_action",
+        )
+
+        self._add_event(campaign, completed_event)
+        events.append(completed_event)
+
+        effect_events = self.clock_effect_service.apply_completion_effects(
+            campaign=campaign,
+            source_clock=clock,
+        )
+        events.extend(effect_events)
+
+        return events
 
     def _get_faction(self, campaign: Campaign, faction_id: str) -> Faction:
         faction = campaign.city.factions.get(faction_id)
@@ -429,6 +580,21 @@ class GMActionService:
             consequences=consequences or [],
             created_by=created_by,
         )
+
+    def _build_clock_id(self, name: str) -> str:
+        prepared_name = name.lower().strip()
+        prepared_name = prepared_name.replace(" ", "_")
+        prepared_name = prepared_name.replace("-", "_")
+        prepared_name = "".join(
+            char
+            for char in prepared_name
+            if char.isalnum() or char == "_"
+        )
+
+        if not prepared_name:
+            prepared_name = "clock"
+
+        return f"clock_{prepared_name}"
 
     def _add_event(self, campaign: Campaign, event: CityEvent) -> None:
         campaign.city.events[event.id] = event

@@ -1,8 +1,9 @@
-from app.domain.enums import ClockType, Hold
+from app.domain.enums import ClockEffectType, ClockType, Hold
 from app.domain.models import (
     Campaign,
     City,
     Clock,
+    ClockEffect,
     District,
     NpcFaction,
     PlayerCrew,
@@ -153,7 +154,22 @@ def build_initial_campaign() -> Campaign:
         trigger_on_complete=(
             "Красные Кушаки получают сильную позицию на спорной улице. "
             "Ведущий решает, теряют ли Гасильщики актив или контроль."
+
         ),
+        completion_effects=[
+            ClockEffect(
+                effect_type=ClockEffectType.TRANSFER_STREET_CONTROL,
+                target_faction_id=red_sashes.id,
+                street_id=black_lamp_alley.id,
+                description="Красные Кушаки забирают спорную улицу.",
+            ),
+            ClockEffect(
+                effect_type=ClockEffectType.SET_FACTION_HOLD,
+                target_faction_id=lampblacks.id,
+                value="weak",
+                description="Позиции Гасильщиков проседают.",
+            ),
+        ],
     )
 
     clock_lampblacks_counterattack = Clock(
@@ -170,6 +186,21 @@ def build_initial_campaign() -> Campaign:
             "Гасильщики совершают открытое нападение. "
             "Ведущий выбирает цель удара."
         ),
+        completion_effects=[
+            ClockEffect(
+                effect_type=ClockEffectType.SET_FACTION_HOLD,
+                target_faction_id=red_sashes.id,
+                value="weak",
+                description="Удар Гасильщиков ослабляет контроль Красных Кушаков.",
+            ),
+            ClockEffect(
+                effect_type=ClockEffectType.CHANGE_RELATION,
+                target_faction_id=lampblacks.id,
+                secondary_faction_id=red_sashes.id,
+                amount=-1,
+                description="Конфликт становится еще жестче.",
+            ),
+        ],
     )
 
     clock_bluecoats_investigation = Clock(
@@ -184,6 +215,20 @@ def build_initial_campaign() -> Campaign:
         trigger_on_complete=(
             "Синие Мундиры готовы к арестам, облаве или шантажу команды."
         ),
+        completion_effects=[
+            ClockEffect(
+                effect_type=ClockEffectType.CHANGE_CREW_HEAT,
+                amount=2,
+                description="Расследование повышает давление на команду.",
+            ),
+            ClockEffect(
+                effect_type=ClockEffectType.CHANGE_RELATION,
+                target_faction_id=player_crew.id,
+                secondary_faction_id=bluecoats.id,
+                amount=-1,
+                description="Синие Мундиры становятся опаснее для команды.",
+            ),
+        ],
     )
 
     city.clocks[clock_red_sashes_market.id] = clock_red_sashes_market

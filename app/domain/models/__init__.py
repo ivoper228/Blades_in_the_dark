@@ -1,6 +1,6 @@
 from app.domain.models.campaign import Campaign
 from app.domain.models.city import City
-from app.domain.models.clock import Clock
+from app.domain.models.clock import Clock, ClockEffect
 from app.domain.models.crew import PlayerCrew
 from app.domain.models.district import District
 from app.domain.models.event import CityEvent
@@ -12,6 +12,7 @@ __all__ = [
     "Campaign",
     "City",
     "Clock",
+    "ClockEffect",
     "PlayerCrew",
     "District",
     "CityEvent",
