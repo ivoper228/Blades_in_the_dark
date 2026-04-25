@@ -1,6 +1,8 @@
 from uuid import uuid4
 
 from app.domain.enums import (
+    ClockActionCategory,
+    ClockAdvanceMode,
     ClockStatus,
     ClockType,
     EventType,
@@ -375,6 +377,11 @@ class GMActionService:
         target_faction_id: str | None = None,
         district_id: str | None = None,
         street_id: str | None = None,
+        advance_mode: ClockAdvanceMode = ClockAdvanceMode.AUTO_WEEKLY,
+        action_category: ClockActionCategory = ClockActionCategory.PROJECT,
+        priority: int = 3,
+        progress_per_week: int = 1,
+        advance_condition: dict | None = None,
         auto_advance: bool = True,
         trigger_on_complete: str = "",
         notes: str = "",
@@ -382,6 +389,9 @@ class GMActionService:
         reason: str = "",
     ) -> tuple[Clock, CityEvent]:
         owner = self._get_faction(campaign, owner_faction_id)
+
+        if not auto_advance and advance_mode == ClockAdvanceMode.AUTO_WEEKLY:
+            advance_mode = ClockAdvanceMode.MANUAL_ONLY
 
         clock_id = self._build_clock_id(name)
 
@@ -398,6 +408,11 @@ class GMActionService:
             target_faction_id=target_faction_id,
             district_id=district_id,
             street_id=street_id,
+            advance_mode=advance_mode,
+            action_category=action_category,
+            priority=max(1, min(priority, 5)),
+            progress_per_week=max(1, progress_per_week),
+            advance_condition=advance_condition or {},
             auto_advance=auto_advance,
             trigger_on_complete=trigger_on_complete,
             notes=notes,
@@ -416,7 +431,9 @@ class GMActionService:
             description=(
                 f"Создан счетчик '{clock.name}' "
                 f"{clock.current_segments}/{clock.max_segments}. "
-                f"Автопрогресс: {'да' if auto_advance else 'нет'}. "
+                f"Режим продвижения: {clock.advance_mode.value}. "
+                f"Категория: {clock.action_category.value}. "
+                f"Приоритет: {clock.priority}. "
                 f"Причина: {reason or 'не указана'}."
             ),
             faction_ids=[owner.id],
@@ -430,7 +447,6 @@ class GMActionService:
         self._add_event(campaign, event)
 
         return clock, event
-
     def add_completion_effect_to_clock(
         self,
         campaign: Campaign,
@@ -473,6 +489,7 @@ class GMActionService:
         old_progress = clock.current_segments
         clock.current_segments = clock.max_segments
         clock.status = ClockStatus.COMPLETED
+        clock.effects_applied = False
 
         events = []
 

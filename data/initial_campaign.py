@@ -1,4 +1,11 @@
-from app.domain.enums import ClockEffectType, ClockType, Hold
+from app.domain.enums import (
+    ClockActionCategory,
+    ClockAdvanceMode,
+    ClockEffectType,
+    ClockType,
+    FocusLevel,
+    Hold,
+)
 from app.domain.models import (
     Campaign,
     City,
@@ -10,7 +17,6 @@ from app.domain.models import (
     Relation,
     Street,
 )
-
 
 def build_initial_campaign() -> Campaign:
     city = City(
@@ -73,6 +79,7 @@ def build_initial_campaign() -> Campaign:
         wanted_level=0,
         coin=0,
         notes="Команда игроков. Ее действия вводятся вручную по итогам сессий.",
+        focus_level=FocusLevel.SPOTLIGHT
     )
 
     lampblacks = NpcFaction(
@@ -150,7 +157,12 @@ def build_initial_campaign() -> Campaign:
         owner_faction_id=red_sashes.id,
         target_faction_id=lampblacks.id,
         district_id=crows_foot.id,
+        focus_level=FocusLevel.SPOTLIGHT,
         street_id=black_lamp_alley.id,
+        advance_mode=ClockAdvanceMode.AUTO_WEEKLY,
+        action_category=ClockActionCategory.ATTACK,
+        priority=5,
+        progress_per_week=1,
         trigger_on_complete=(
             "Красные Кушаки получают сильную позицию на спорной улице. "
             "Ведущий решает, теряют ли Гасильщики актив или контроль."
@@ -170,6 +182,7 @@ def build_initial_campaign() -> Campaign:
                 description="Позиции Гасильщиков проседают.",
             ),
         ],
+
     )
 
     clock_lampblacks_counterattack = Clock(
@@ -182,6 +195,11 @@ def build_initial_campaign() -> Campaign:
         target_faction_id=red_sashes.id,
         district_id=crows_foot.id,
         street_id=silk_lane.id,
+        focus_level=FocusLevel.SPOTLIGHT,
+        advance_mode=ClockAdvanceMode.AUTO_WEEKLY,
+        action_category=ClockActionCategory.ATTACK,
+        priority=5,
+        progress_per_week=1,
         trigger_on_complete=(
             "Гасильщики совершают открытое нападение. "
             "Ведущий выбирает цель удара."
@@ -212,6 +230,11 @@ def build_initial_campaign() -> Campaign:
         owner_faction_id=bluecoats.id,
         target_faction_id=player_crew.id,
         district_id=crows_foot.id,
+        focus_level=FocusLevel.ACTIVE,
+        advance_mode=ClockAdvanceMode.AUTO_WEEKLY,
+        action_category=ClockActionCategory.INVESTIGATION,
+        priority=4,
+        progress_per_week=1,
         trigger_on_complete=(
             "Синие Мундиры готовы к арестам, облаве или шантажу команды."
         ),

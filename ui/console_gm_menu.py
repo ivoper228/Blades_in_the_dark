@@ -14,7 +14,9 @@ class ConsoleGMMenu:
         self.campaign = campaign
         self.save_path = save_path
         self.gm_action_service = GMActionService()
-        self.weekly_turn_service = WeeklyTurnService()
+        self.weekly_turn_service = WeeklyTurnService(
+            confirmation_callback=self.confirm_clock_advance,
+        )
         self.storage = JsonStorage()
 
     def run(self) -> None:
@@ -359,7 +361,29 @@ class ConsoleGMMenu:
         )
 
         print(f"Готово: {event.title}")
+    def confirm_clock_advance(self, campaign: Campaign, clock) -> bool:
+        owner_name = "Город"
 
+        if clock.owner_faction_id is not None:
+            owner = campaign.city.factions.get(clock.owner_faction_id)
+
+            if owner is not None:
+                owner_name = owner.name
+
+        print()
+        print("=== ПОДТВЕРЖДЕНИЕ СЧЕТЧИКА ===")
+        print(f"Фракция: {owner_name}")
+        print(f"Счетчик: {clock.name}")
+        print(f"Прогресс: {clock.current_segments}/{clock.max_segments}")
+        print(f"Категория: {clock.action_category.value}")
+        print(f"Приоритет: {clock.priority}")
+        print("Продвинуть этот счетчик на этой неделе?")
+        print("1. Да")
+        print("2. Нет")
+
+        choice = input("> ").strip()
+
+        return choice == "1"
     def run_week(self) -> None:
         events = self.weekly_turn_service.run_week(self.campaign)
 

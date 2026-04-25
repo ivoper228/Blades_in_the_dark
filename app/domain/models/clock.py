@@ -2,6 +2,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.domain.enums import (
+    ClockActionCategory,
+    ClockAdvanceMode,
     ClockEffectType,
     ClockStatus,
     ClockType,
@@ -36,5 +38,13 @@ class Clock:
     visibility: Visibility = Visibility.GM_ONLY
     trigger_on_complete: str = ""
     notes: str = ""
+
+    advance_mode: ClockAdvanceMode = ClockAdvanceMode.AUTO_WEEKLY
+    action_category: ClockActionCategory = ClockActionCategory.PROJECT
+    priority: int = 3
+    progress_per_week: int = 1
+    advance_condition: dict[str, Any] = field(default_factory=dict)
+
     auto_advance: bool = True
+    effects_applied: bool = False
     completion_effects: list[ClockEffect] = field(default_factory=list)

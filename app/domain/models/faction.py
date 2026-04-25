@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from app.domain.enums import FactionStatus, Hold
+from app.domain.enums import FactionStatus, FocusLevel, Hold
 
 
 @dataclass
@@ -11,6 +11,7 @@ class Faction:
     tier: int = 0
     hold: Hold = Hold.STRONG
     status: FactionStatus = FactionStatus.ACTIVE
+    focus_level: FocusLevel = FocusLevel.ACTIVE
     district_ids: list[str] = field(default_factory=list)
     street_ids: list[str] = field(default_factory=list)
     asset_ids: list[str] = field(default_factory=list)

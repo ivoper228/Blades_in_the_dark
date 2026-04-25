@@ -32,6 +32,9 @@ class ClockEffectService:
         if recursion_depth > 5:
             return []
 
+        if source_clock.effects_applied:
+            return []
+
         events: list[CityEvent] = []
 
         for effect in source_clock.completion_effects:
@@ -48,6 +51,11 @@ class ClockEffectService:
                     recursion_depth=recursion_depth,
                 )
                 events.extend(nested_events)
+
+        source_clock.effects_applied = True
+
+        if source_clock.status == ClockStatus.COMPLETED:
+            source_clock.status = ClockStatus.RESOLVED
 
         return events
 

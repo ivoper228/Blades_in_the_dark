@@ -13,6 +13,13 @@ class FactionStatus(str, Enum):
     HIDDEN = "hidden"
 
 
+class FocusLevel(str, Enum):
+    DORMANT = "dormant"
+    BACKGROUND = "background"
+    ACTIVE = "active"
+    SPOTLIGHT = "spotlight"
+
+
 class ClockType(str, Enum):
     PROJECT = "project"
     DANGER = "danger"
@@ -22,10 +29,29 @@ class ClockType(str, Enum):
     REVERSIBLE = "reversible"
 
 
+class ClockAdvanceMode(str, Enum):
+    AUTO_WEEKLY = "auto_weekly"
+    GM_CONFIRM_WEEKLY = "gm_confirm_weekly"
+    MANUAL_ONLY = "manual_only"
+    CONDITIONAL_WEEKLY = "conditional_weekly"
+    REACTION = "reaction"
+
+
+class ClockActionCategory(str, Enum):
+    ATTACK = "attack"
+    DEFENSE = "defense"
+    INVESTIGATION = "investigation"
+    PROJECT = "project"
+    RECOVERY = "recovery"
+    INFLUENCE = "influence"
+
+
 class ClockStatus(str, Enum):
     ACTIVE = "active"
     COMPLETED = "completed"
+    RESOLVED = "resolved"
     PAUSED = "paused"
+    FAILED = "failed"
 
 
 class ClockEffectType(str, Enum):

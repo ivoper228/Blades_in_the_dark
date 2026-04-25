@@ -18,6 +18,7 @@ class ClockService:
 
         if is_completed:
             clock.status = ClockStatus.COMPLETED
+            clock.effects_applied = False
 
         return is_completed and not was_completed
 
@@ -26,3 +27,4 @@ class ClockService:
 
         if clock.current_segments < clock.max_segments:
             clock.status = ClockStatus.ACTIVE
+            clock.effects_applied = False
