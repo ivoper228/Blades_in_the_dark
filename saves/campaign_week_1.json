@@ -1,0 +1,395 @@
+{
+  "id": "main_campaign",
+  "name": "Кампания в Даскволе",
+  "current_week": 1,
+  "city": {
+    "id": "doskvol",
+    "name": "Дасквол",
+    "districts": {
+      "crows_foot": {
+        "id": "crows_foot",
+        "name": "Вороний перекресток",
+        "description": "Район банд, притонов, старых домов и борьбы за улицы.",
+        "danger_level": 3,
+        "street_ids": [
+          "black_lamp_alley",
+          "silk_lane"
+        ],
+        "faction_ids": [
+          "player_crew",
+          "lampblacks",
+          "red_sashes",
+          "bluecoats"
+        ],
+        "notes": ""
+      }
+    },
+    "streets": {
+      "black_lamp_alley": {
+        "id": "black_lamp_alley",
+        "name": "Переулок Черной Лампы",
+        "district_id": "crows_foot",
+        "controlling_faction_id": "lampblacks",
+        "present_faction_ids": [
+          "lampblacks",
+          "red_sashes",
+          "bluecoats"
+        ],
+        "asset_ids": [],
+        "tags": [
+          "narrow",
+          "gang_border",
+          "drug_trade"
+        ],
+        "atmosphere": [
+          "fog",
+          "oil_puddles",
+          "dim_lamps"
+        ],
+        "landmarks": [
+          "old_bridge",
+          "closed_tavern",
+          "warehouse_door"
+        ],
+        "notes": "Спорная улица между Гасильщиками и Красными Кушаками."
+      },
+      "silk_lane": {
+        "id": "silk_lane",
+        "name": "Шелковый проход",
+        "district_id": "crows_foot",
+        "controlling_faction_id": "red_sashes",
+        "present_faction_ids": [
+          "red_sashes",
+          "lampblacks"
+        ],
+        "asset_ids": [],
+        "tags": [
+          "market",
+          "irovian",
+          "tense"
+        ],
+        "atmosphere": [
+          "incense",
+          "wet_stone",
+          "watchful_windows"
+        ],
+        "landmarks": [
+          "fencing_school",
+          "tea_house"
+        ],
+        "notes": "Место, где Красные Кушаки держат влияние через учеников и торговцев."
+      }
+    },
+    "factions": {
+      "player_crew": {
+        "id": "player_crew",
+        "name": "Команда игроков",
+        "faction_type": "crew",
+        "tier": 0,
+        "hold": "strong",
+        "status": "active",
+        "district_ids": [
+          "crows_foot"
+        ],
+        "street_ids": [],
+        "asset_ids": [],
+        "clock_ids": [],
+        "notes": "Команда игроков. Ее действия вводятся вручную по итогам сессий.",
+        "crew_type": "unknown",
+        "reputation": 0,
+        "heat": 0,
+        "wanted_level": 0,
+        "coin": 0,
+        "lair_id": null,
+        "crew_xp": 0,
+        "upgrades": [],
+        "claims": []
+      },
+      "lampblacks": {
+        "id": "lampblacks",
+        "name": "Гасильщики",
+        "faction_type": "gang",
+        "tier": 2,
+        "hold": "weak",
+        "status": "active",
+        "district_ids": [
+          "crows_foot"
+        ],
+        "street_ids": [
+          "black_lamp_alley"
+        ],
+        "asset_ids": [],
+        "clock_ids": [
+          "clock_lampblacks_counterattack"
+        ],
+        "notes": "",
+        "leader": "Баззо Баз",
+        "public_goal": "Удержать улицы Вороньего перекрестка.",
+        "hidden_goal": "Сломать Красных Кушаков до того, как вмешаются другие силы.",
+        "preferred_actions": [
+          "attack_enemy",
+          "protect_asset",
+          "expand_territory"
+        ],
+        "enemies": [
+          "red_sashes"
+        ],
+        "allies": [],
+        "resources": [
+          "street_toughs",
+          "old_contacts",
+          "fear"
+        ],
+        "vulnerabilities": [
+          "weak_control",
+          "many_enemies"
+        ]
+      },
+      "red_sashes": {
+        "id": "red_sashes",
+        "name": "Красные Кушаки",
+        "faction_type": "gang",
+        "tier": 2,
+        "hold": "strong",
+        "status": "active",
+        "district_ids": [
+          "crows_foot"
+        ],
+        "street_ids": [
+          "silk_lane"
+        ],
+        "asset_ids": [],
+        "clock_ids": [
+          "clock_red_sashes_market"
+        ],
+        "notes": "",
+        "leader": "Майлера Клев",
+        "public_goal": "Вернуть контроль над рынком и улицами.",
+        "hidden_goal": "Переманить торговцев и изолировать Гасильщиков.",
+        "preferred_actions": [
+          "expand_territory",
+          "buy_influence",
+          "attack_enemy"
+        ],
+        "enemies": [
+          "lampblacks"
+        ],
+        "allies": [],
+        "resources": [
+          "sword_students",
+          "irovian_contacts",
+          "discipline"
+        ],
+        "vulnerabilities": [
+          "pride",
+          "limited_numbers"
+        ]
+      },
+      "bluecoats": {
+        "id": "bluecoats",
+        "name": "Синие Мундиры",
+        "faction_type": "law",
+        "tier": 3,
+        "hold": "strong",
+        "status": "active",
+        "district_ids": [
+          "crows_foot"
+        ],
+        "street_ids": [
+          "black_lamp_alley",
+          "silk_lane"
+        ],
+        "asset_ids": [],
+        "clock_ids": [
+          "clock_bluecoats_investigation"
+        ],
+        "notes": "",
+        "leader": "Капитан районного участка",
+        "public_goal": "Сохранять видимость порядка.",
+        "hidden_goal": "Собрать компромат и выжать деньги со всех сторон.",
+        "preferred_actions": [
+          "investigate",
+          "extort",
+          "protect_asset"
+        ],
+        "enemies": [],
+        "allies": [],
+        "resources": [
+          "patrols",
+          "cells",
+          "paperwork"
+        ],
+        "vulnerabilities": [
+          "corruption",
+          "public_pressure"
+        ]
+      }
+    },
+    "clocks": {
+      "clock_red_sashes_market": {
+        "id": "clock_red_sashes_market",
+        "name": "Красные Кушаки возвращают рынок искры",
+        "clock_type": "project",
+        "max_segments": 6,
+        "current_segments": 3,
+        "owner_faction_id": "red_sashes",
+        "target_faction_id": "lampblacks",
+        "district_id": "crows_foot",
+        "street_id": "black_lamp_alley",
+        "status": "active",
+        "visibility": "gm_only",
+        "trigger_on_complete": "Красные Кушаки получают сильную позицию на спорной улице. Ведущий решает, теряют ли Гасильщики актив или контроль.",
+        "notes": ""
+      },
+      "clock_lampblacks_counterattack": {
+        "id": "clock_lampblacks_counterattack",
+        "name": "Гасильщики готовят ответный удар",
+        "clock_type": "conflict",
+        "max_segments": 6,
+        "current_segments": 2,
+        "owner_faction_id": "lampblacks",
+        "target_faction_id": "red_sashes",
+        "district_id": "crows_foot",
+        "street_id": "silk_lane",
+        "status": "active",
+        "visibility": "gm_only",
+        "trigger_on_complete": "Гасильщики совершают открытое нападение. Ведущий выбирает цель удара.",
+        "notes": ""
+      },
+      "clock_bluecoats_investigation": {
+        "id": "clock_bluecoats_investigation",
+        "name": "Синие Мундиры собирают дело против команды",
+        "clock_type": "investigation",
+        "max_segments": 8,
+        "current_segments": 1,
+        "owner_faction_id": "bluecoats",
+        "target_faction_id": "player_crew",
+        "district_id": "crows_foot",
+        "street_id": null,
+        "status": "active",
+        "visibility": "gm_only",
+        "trigger_on_complete": "Синие Мундиры готовы к арестам, облаве или шантажу команды.",
+        "notes": ""
+      }
+    },
+    "relations": {
+      "rel_player_lampblacks": {
+        "id": "rel_player_lampblacks",
+        "faction_a_id": "player_crew",
+        "faction_b_id": "lampblacks",
+        "value": 0,
+        "reason": "Пока нейтральные отношения.",
+        "is_public": false,
+        "notes": ""
+      },
+      "rel_player_red_sashes": {
+        "id": "rel_player_red_sashes",
+        "faction_a_id": "player_crew",
+        "faction_b_id": "red_sashes",
+        "value": 0,
+        "reason": "Пока нейтральные отношения.",
+        "is_public": false,
+        "notes": ""
+      },
+      "rel_player_bluecoats": {
+        "id": "rel_player_bluecoats",
+        "faction_a_id": "player_crew",
+        "faction_b_id": "bluecoats",
+        "value": 0,
+        "reason": "Синие Мундиры пока просто наблюдают.",
+        "is_public": false,
+        "notes": ""
+      },
+      "rel_lampblacks_red_sashes": {
+        "id": "rel_lampblacks_red_sashes",
+        "faction_a_id": "lampblacks",
+        "faction_b_id": "red_sashes",
+        "value": -3,
+        "reason": "Открытая борьба за Вороний перекресток.",
+        "is_public": true,
+        "notes": ""
+      }
+    },
+    "events": {
+      "de1bcb8b-f6cd-4c1d-a083-0d3aa5f8c327": {
+        "id": "de1bcb8b-f6cd-4c1d-a083-0d3aa5f8c327",
+        "week": 1,
+        "event_type": "week_started",
+        "title": "Началась неделя 1",
+        "description": "Город делает новый ход.",
+        "faction_ids": [],
+        "clock_ids": [],
+        "district_id": null,
+        "street_id": null,
+        "visibility": "gm_only",
+        "consequences": [],
+        "created_by": "weekly_turn"
+      },
+      "259b9c95-55a7-4b1d-b2c4-1af00d84d2c7": {
+        "id": "259b9c95-55a7-4b1d-b2c4-1af00d84d2c7",
+        "week": 1,
+        "event_type": "clock_progress",
+        "title": "Гасильщики: счетчик продвинулся",
+        "description": "Счетчик 'Гасильщики готовят ответный удар' продвинут на 1. Прогресс: 2/6.",
+        "faction_ids": [
+          "lampblacks"
+        ],
+        "clock_ids": [
+          "clock_lampblacks_counterattack"
+        ],
+        "district_id": "crows_foot",
+        "street_id": "silk_lane",
+        "visibility": "gm_only",
+        "consequences": [
+          "clock +1"
+        ],
+        "created_by": "weekly_turn"
+      },
+      "e6820f02-6bc0-47f0-ae0e-95aee99cfe85": {
+        "id": "e6820f02-6bc0-47f0-ae0e-95aee99cfe85",
+        "week": 1,
+        "event_type": "clock_progress",
+        "title": "Красные Кушаки: счетчик продвинулся",
+        "description": "Счетчик 'Красные Кушаки возвращают рынок искры' продвинут на 1. Прогресс: 3/6.",
+        "faction_ids": [
+          "red_sashes"
+        ],
+        "clock_ids": [
+          "clock_red_sashes_market"
+        ],
+        "district_id": "crows_foot",
+        "street_id": "black_lamp_alley",
+        "visibility": "gm_only",
+        "consequences": [
+          "clock +1"
+        ],
+        "created_by": "weekly_turn"
+      },
+      "350fc0f0-0641-4f57-bf39-60d5be3a39bd": {
+        "id": "350fc0f0-0641-4f57-bf39-60d5be3a39bd",
+        "week": 1,
+        "event_type": "clock_progress",
+        "title": "Синие Мундиры: счетчик продвинулся",
+        "description": "Счетчик 'Синие Мундиры собирают дело против команды' продвинут на 1. Прогресс: 1/8.",
+        "faction_ids": [
+          "bluecoats"
+        ],
+        "clock_ids": [
+          "clock_bluecoats_investigation"
+        ],
+        "district_id": "crows_foot",
+        "street_id": null,
+        "visibility": "gm_only",
+        "consequences": [
+          "clock +1"
+        ],
+        "created_by": "weekly_turn"
+      }
+    }
+  },
+  "player_crew_id": "player_crew",
+  "settings": {
+    "dice_enabled": false,
+    "player_mode_enabled": false
+  }
+}
