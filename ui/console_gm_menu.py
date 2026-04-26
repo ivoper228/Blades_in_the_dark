@@ -1,5 +1,13 @@
-from app.domain.enums import ClockStatus, FactionStatus, Hold
-from app.domain.models import Campaign, Faction, NpcFaction
+from app.domain.enums import (
+    ClockActionCategory,
+    ClockAdvanceMode,
+    ClockEffectType,
+    ClockStatus,
+    ClockType,
+    FactionStatus,
+    Hold,
+)
+from app.domain.models import Campaign, ClockEffect, Faction, NpcFaction
 from services.gm_action_service import GMActionService
 from services.weekly_turn_service import WeeklyTurnService
 from storage.json_storage import JsonStorage
@@ -31,6 +39,8 @@ class ConsoleGMMenu:
             print("3. Запустить новую неделю")
             print("4. Показать журнал событий")
             print("5. Сохранить кампанию")
+            print("6. Создать счетчик")
+            print("7. Добавить эффект к счетчику")
             print("0. Выйти")
             print()
 
@@ -46,6 +56,10 @@ class ConsoleGMMenu:
                 self.show_events()
             elif choice == "5":
                 self.save_campaign()
+            elif choice == "6":
+                self.create_clock_menu()
+            elif choice == "7":
+                self.add_clock_effect_menu()
             elif choice == "0":
                 self.exit_menu()
                 break
@@ -77,11 +91,13 @@ class ConsoleGMMenu:
 
                     if clock is None:
                         continue
+                    effects_count = len(clock.completion_effects)
 
                     print(
                         f"    - {clock.name}: "
                         f"{clock.current_segments}/{clock.max_segments} "
-                        f"({clock.status.value})"
+                        f"({clock.status.value}), "
+                        f"эффектов: {effects_count}"
                     )
 
     def edit_faction_menu(self) -> None:
@@ -161,10 +177,13 @@ class ConsoleGMMenu:
                 if clock is None:
                     continue
 
+                effects_count = len(clock.completion_effects)
+
                 print(
                     f"- {clock.id}: {clock.name} "
                     f"{clock.current_segments}/{clock.max_segments} "
-                    f"({clock.status.value})"
+                    f"({clock.status.value}), "
+                    f"эффектов: {effects_count}"
                 )
         else:
             print("Счетчики: нет")
@@ -384,6 +403,534 @@ class ConsoleGMMenu:
         choice = input("> ").strip()
 
         return choice == "1"
+    def add_clock_effect_menu(self) -> None:
+        print()
+        print("=== ДОБАВЛЕНИЕ ЭФФЕКТА К СЧЕТЧИКУ ===")
+
+        owner = self._select_faction()
+
+        if owner is None:
+            return
+
+        clock_id = self._select_faction_clock(owner)
+
+        if clock_id is None:
+            return
+
+        effect_type = self._select_clock_effect_type()
+        effect = self._build_clock_effect(effect_type)
+
+        if effect is None:
+            print("Эффект не создан.")
+            return
+
+        effect.description = input(
+            "Описание эффекта, можно оставить пустым: "
+        ).strip()
+
+        reason = self._input_reason()
+
+        event = self.gm_action_service.add_completion_effect_to_clock(
+            campaign=self.campaign,
+            clock_id=clock_id,
+            effect=effect,
+            reason=reason,
+        )
+
+        print()
+        print(f"Готово: {event.title}")
+
+    def _select_clock_effect_type(self) -> ClockEffectType:
+        options = list(ClockEffectType)
+
+        print()
+        print("Выбери тип эффекта:")
+        print("change_faction_tier - изменить ранг фракции на +N или -N")
+        print("set_faction_tier - установить ранг фракции")
+        print("set_faction_hold - установить контроль фракции")
+        print("set_faction_status - установить статус фракции")
+        print("change_relation - изменить отношения двух фракций")
+        print("transfer_street_control - передать контроль улицы")
+        print("advance_clock - продвинуть другой счетчик")
+        print("change_crew_heat - изменить подозрения команды")
+        print("change_crew_wanted_level - изменить уровень розыска команды")
+        print()
+
+        for index, item in enumerate(options, start=1):
+            print(f"{index}. {item.value}")
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=1,
+            max_value=len(options),
+        )
+
+        return options[choice - 1]
+
+    def _build_clock_effect(
+        self,
+        effect_type: ClockEffectType,
+    ) -> ClockEffect | None:
+        if effect_type == ClockEffectType.CHANGE_FACTION_TIER:
+            target_faction_id = self._select_required_faction_id(
+                "Выбери фракцию, чей ранг изменить:"
+            )
+            if target_faction_id is None:
+                return None
+
+            amount = self._input_int(
+                prompt="На сколько изменить ранг, например -1 или 1: ",
+                min_value=-6,
+                max_value=6,
+            )
+
+            return ClockEffect(
+                effect_type=effect_type,
+                target_faction_id=target_faction_id,
+                amount=amount,
+            )
+
+        if effect_type == ClockEffectType.SET_FACTION_TIER:
+            target_faction_id = self._select_required_faction_id(
+                "Выбери фракцию, чей ранг установить:"
+            )
+            if target_faction_id is None:
+                return None
+
+            value = self._input_int(
+                prompt="Новый ранг от 0 до 6: ",
+                min_value=0,
+                max_value=6,
+            )
+
+            return ClockEffect(
+                effect_type=effect_type,
+                target_faction_id=target_faction_id,
+                value=value,
+            )
+
+        if effect_type == ClockEffectType.SET_FACTION_HOLD:
+            target_faction_id = self._select_required_faction_id(
+                "Выбери фракцию, чей контроль изменить:"
+            )
+            if target_faction_id is None:
+                return None
+
+            hold = self._select_hold()
+
+            return ClockEffect(
+                effect_type=effect_type,
+                target_faction_id=target_faction_id,
+                value=hold.value,
+            )
+
+        if effect_type == ClockEffectType.SET_FACTION_STATUS:
+            target_faction_id = self._select_required_faction_id(
+                "Выбери фракцию, чей статус изменить:"
+            )
+            if target_faction_id is None:
+                return None
+
+            status = self._select_faction_status()
+
+            return ClockEffect(
+                effect_type=effect_type,
+                target_faction_id=target_faction_id,
+                value=status.value,
+            )
+
+        if effect_type == ClockEffectType.CHANGE_RELATION:
+            target_faction_id = self._select_required_faction_id(
+                "Выбери первую фракцию:"
+            )
+            if target_faction_id is None:
+                return None
+
+            secondary_faction_id = self._select_required_faction_id(
+                "Выбери вторую фракцию:"
+            )
+            if secondary_faction_id is None:
+                return None
+
+            amount = self._input_int(
+                prompt="На сколько изменить отношения, от -3 до 3: ",
+                min_value=-3,
+                max_value=3,
+            )
+
+            return ClockEffect(
+                effect_type=effect_type,
+                target_faction_id=target_faction_id,
+                secondary_faction_id=secondary_faction_id,
+                amount=amount,
+            )
+
+        if effect_type == ClockEffectType.TRANSFER_STREET_CONTROL:
+            target_faction_id = self._select_required_faction_id(
+                "Выбери нового владельца улицы:"
+            )
+            if target_faction_id is None:
+                return None
+
+            street_id = self._select_optional_street_id()
+            if street_id is None:
+                print("Для передачи контроля нужно выбрать улицу.")
+                return None
+
+            return ClockEffect(
+                effect_type=effect_type,
+                target_faction_id=target_faction_id,
+                street_id=street_id,
+            )
+
+        if effect_type == ClockEffectType.ADVANCE_CLOCK:
+            target_clock_id = self._select_any_clock_id()
+            if target_clock_id is None:
+                return None
+
+            amount = self._input_int(
+                prompt="На сколько продвинуть связанный счетчик: ",
+                min_value=1,
+                max_value=20,
+            )
+
+            return ClockEffect(
+                effect_type=effect_type,
+                target_clock_id=target_clock_id,
+                amount=amount,
+            )
+
+        if effect_type == ClockEffectType.CHANGE_CREW_HEAT:
+            amount = self._input_int(
+                prompt="На сколько изменить подозрения команды, например -1 или 2: ",
+                min_value=-20,
+                max_value=20,
+            )
+
+            return ClockEffect(
+                effect_type=effect_type,
+                amount=amount,
+            )
+
+        if effect_type == ClockEffectType.CHANGE_CREW_WANTED_LEVEL:
+            amount = self._input_int(
+                prompt="На сколько изменить уровень розыска команды, например -1 или 1: ",
+                min_value=-6,
+                max_value=6,
+            )
+
+            return ClockEffect(
+                effect_type=effect_type,
+                amount=amount,
+            )
+
+        return None
+
+    def _select_required_faction_id(self, title: str) -> str | None:
+        faction_id = self._select_optional_faction_id(title)
+
+        if faction_id is None:
+            print("Фракция не выбрана.")
+            return None
+
+        return faction_id
+
+    def _select_hold(self) -> Hold:
+        print()
+        print("Выбери контроль:")
+        print("1. weak")
+        print("2. strong")
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=1,
+            max_value=2,
+        )
+
+        if choice == 1:
+            return Hold.WEAK
+
+        return Hold.STRONG
+
+    def _select_faction_status(self) -> FactionStatus:
+        options = list(FactionStatus)
+
+        print()
+        print("Выбери статус фракции:")
+
+        for index, item in enumerate(options, start=1):
+            print(f"{index}. {item.value}")
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=1,
+            max_value=len(options),
+        )
+
+        return options[choice - 1]
+
+    def _select_any_clock_id(self) -> str | None:
+        clocks = list(self.campaign.city.clocks.values())
+
+        if not clocks:
+            print("В кампании нет счетчиков.")
+            return None
+
+        print()
+        print("Выбери счетчик:")
+
+        for index, clock in enumerate(clocks, start=1):
+            owner_name = "Город"
+
+            if clock.owner_faction_id is not None:
+                owner = self.campaign.city.factions.get(clock.owner_faction_id)
+
+                if owner is not None:
+                    owner_name = owner.name
+
+            print(
+                f"{index}. {clock.name} "
+                f"{clock.current_segments}/{clock.max_segments} "
+                f"({clock.status.value}) - {owner_name}"
+            )
+
+        print("0. Назад")
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=0,
+            max_value=len(clocks),
+        )
+
+        if choice == 0:
+            return None
+
+        return clocks[choice - 1].id
+    def create_clock_menu(self) -> None:
+        print()
+        print("=== СОЗДАНИЕ СЧЕТЧИКА ===")
+
+        owner = self._select_faction()
+
+        if owner is None:
+            return
+
+        name = input("Название счетчика: ").strip()
+
+        if not name:
+            print("Название не может быть пустым.")
+            return
+
+        clock_type = self._select_clock_type()
+        advance_mode = self._select_clock_advance_mode()
+        action_category = self._select_clock_action_category()
+
+        max_segments = self._input_int(
+            prompt="Размер счетчика, обычно 4, 6 или 8: ",
+            min_value=1,
+            max_value=20,
+        )
+
+        current_segments = self._input_int(
+            prompt="Текущий прогресс, обычно 0: ",
+            min_value=0,
+            max_value=max_segments,
+        )
+
+        priority = self._input_int(
+            prompt="Приоритет от 1 до 5: ",
+            min_value=1,
+            max_value=5,
+        )
+
+        progress_per_week = self._input_int(
+            prompt="Прогресс за неделю, обычно 1: ",
+            min_value=1,
+            max_value=10,
+        )
+
+        target_faction_id = self._select_optional_faction_id(
+            title="Выбери цель счетчика, можно пропустить:"
+        )
+
+        district_id = self._select_optional_district_id()
+        street_id = self._select_optional_street_id()
+
+        trigger_on_complete = input(
+            "Что произойдет при завершении, текстом, можно оставить пустым: "
+        ).strip()
+
+        notes = input("Заметки, можно оставить пустым: ").strip()
+        reason = self._input_reason()
+
+        auto_advance = advance_mode not in [
+            ClockAdvanceMode.MANUAL_ONLY,
+            ClockAdvanceMode.REACTION,
+        ]
+
+        clock, event = self.gm_action_service.create_faction_clock(
+            campaign=self.campaign,
+            name=name,
+            clock_type=clock_type,
+            max_segments=max_segments,
+            owner_faction_id=owner.id,
+            current_segments=current_segments,
+            target_faction_id=target_faction_id,
+            district_id=district_id,
+            street_id=street_id,
+            advance_mode=advance_mode,
+            action_category=action_category,
+            priority=priority,
+            progress_per_week=progress_per_week,
+            auto_advance=auto_advance,
+            trigger_on_complete=trigger_on_complete,
+            notes=notes,
+            reason=reason,
+        )
+
+        print()
+        print(f"Счетчик создан: {clock.name}")
+        print(f"ID: {clock.id}")
+        print(f"Событие: {event.title}")
+
+    def _select_clock_type(self) -> ClockType:
+        options = list(ClockType)
+
+        print()
+        print("Выбери тип счетчика:")
+
+        for index, item in enumerate(options, start=1):
+            print(f"{index}. {item.value}")
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=1,
+            max_value=len(options),
+        )
+
+        return options[choice - 1]
+
+    def _select_clock_advance_mode(self) -> ClockAdvanceMode:
+        options = list(ClockAdvanceMode)
+
+        print()
+        print("Выбери режим продвижения:")
+        print("auto_weekly - двигается каждую неделю")
+        print("gm_confirm_weekly - каждую неделю спрашивает мастера")
+        print("manual_only - двигается только вручную")
+        print("conditional_weekly - двигается по условию")
+        print("reaction - двигается только как реакция")
+        print()
+
+        for index, item in enumerate(options, start=1):
+            print(f"{index}. {item.value}")
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=1,
+            max_value=len(options),
+        )
+
+        return options[choice - 1]
+
+    def _select_clock_action_category(self) -> ClockActionCategory:
+        options = list(ClockActionCategory)
+
+        print()
+        print("Выбери категорию счетчика:")
+        print("attack - атака")
+        print("defense - защита")
+        print("investigation - расследование")
+        print("project - обычный проект")
+        print("recovery - восстановление")
+        print("influence - влияние")
+        print()
+
+        for index, item in enumerate(options, start=1):
+            print(f"{index}. {item.value}")
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=1,
+            max_value=len(options),
+        )
+
+        return options[choice - 1]
+
+    def _select_optional_faction_id(self, title: str) -> str | None:
+        factions = list(self.campaign.city.factions.values())
+
+        print()
+        print(title)
+
+        for index, faction in enumerate(factions, start=1):
+            print(f"{index}. {faction.name} ({faction.id})")
+
+        print("0. Пропустить")
+        print()
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=0,
+            max_value=len(factions),
+        )
+
+        if choice == 0:
+            return None
+
+        return factions[choice - 1].id
+
+    def _select_optional_district_id(self) -> str | None:
+        districts = list(self.campaign.city.districts.values())
+
+        if not districts:
+            return None
+
+        print()
+        print("Выбери район, можно пропустить:")
+
+        for index, district in enumerate(districts, start=1):
+            print(f"{index}. {district.name} ({district.id})")
+
+        print("0. Пропустить")
+        print()
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=0,
+            max_value=len(districts),
+        )
+
+        if choice == 0:
+            return None
+
+        return districts[choice - 1].id
+
+    def _select_optional_street_id(self) -> str | None:
+        streets = list(self.campaign.city.streets.values())
+
+        if not streets:
+            return None
+
+        print()
+        print("Выбери улицу, можно пропустить:")
+
+        for index, street in enumerate(streets, start=1):
+            print(f"{index}. {street.name} ({street.id})")
+
+        print("0. Пропустить")
+        print()
+
+        choice = self._input_int(
+            prompt="> ",
+            min_value=0,
+            max_value=len(streets),
+        )
+
+        if choice == 0:
+            return None
+
+        return streets[choice - 1].id
     def run_week(self) -> None:
         events = self.weekly_turn_service.run_week(self.campaign)
 
